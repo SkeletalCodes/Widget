@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Crypto Dashboard</title>
+<style>
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.container {
+  max-width: 750px;
+  margin: 30px auto;
+  padding: 10px;
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.symbol {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.price {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.balance {
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.value {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 4px;
+  color: #38bdf8;
+}
+
+button {
+  background: #3b82f6;
+  border: none;
+  color: white;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+button:hover {
+  background: #2563eb;
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="cryptoContainer"></div>
+
+<script>
+
+const ADDRESSES = {
+  solana: "YOUR_SOL_ADDRESS",
+  ethereum: "YOUR_ETH_ADDRESS",
+  bitcoin: "YOUR_BTC_ADDRESS",
+  binancecoin: "YOUR_BNB_ADDRESS",
+  dogecoin: "YOUR_DOGE_ADDRESS",
+  litecoin: "YOUR_LTC_ADDRESS",
+  tron: "YOUR_TRX_ADDRESS"
+};
+
+const SYMBOLS = {
+  solana: "SOL",
+  ethereum: "ETH",
+  bitcoin: "BTC",
+  binancecoin: "BNB",
+  dogecoin: "DOGE",
+  litecoin: "LTC",
+  tron: "TRX"
+};
+
+async function fetchPrices() {
+  const ids = Object.keys(ADDRESSES).join(",");
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}`
+  );
+  return await res.json();
+}
+
+async function fetchBalances() {
+
+  const balances = {};
+
+  // SOL
+  const solRes = await fetch("https://api.mainnet-beta.solana.com", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getBalance",
+      params: [ADDRESSES.solana]
+    })
+  });
+  const solData = await solRes.json();
+  balances.solana = solData.result.value / 1e9;
+
+  // ETH
+  const ethData = await fetch(
+    `https://api.blockchair.com/ethereum/dashboards/address/${ADDRESSES.ethereum}`
+  ).then(r=>r.json());
+  balances.ethereum = ethData.data[ADDRESSES.ethereum].address.balance / 1e18;
+
+  // BNB
+  const bnbData = await fetch(
+    `https://api.blockchair.com/binance-smart-chain/dashboards/address/${ADDRESSES.binancecoin}`
+  ).then(r=>r.json());
+  balances.binancecoin = bnbData.data[ADDRESSES.binancecoin].address.balance / 1e18;
+
+  // BTC
+  const btcData = await fetch(
+    `https://api.blockchair.com/bitcoin/dashboards/address/${ADDRESSES.bitcoin}`
+  ).then(r=>r.json());
+  balances.bitcoin = btcData.data[ADDRESSES.bitcoin].address.balance / 1e8;
+
+  // LTC
+  const ltcData = await fetch(
+    `https://api.blockchair.com/litecoin/dashboards/address/${ADDRESSES.litecoin}`
+  ).then(r=>r.json());
+  balances.litecoin = ltcData.data[ADDRESSES.litecoin].address.balance / 1e8;
+
+  // DOGE
+  const dogeData = await fetch(
+    `https://api.blockchair.com/dogecoin/dashboards/address/${ADDRESSES.dogecoin}`
+  ).then(r=>r.json());
+  balances.dogecoin = dogeData.data[ADDRESSES.dogecoin].address.balance / 1e8;
+
+  // TRX
+  const trxData = await fetch(
+    `https://apilist.tronscan.org/api/account?address=${ADDRESSES.tron}`
+  ).then(r=>r.json());
+  balances.tron = trxData.balance / 1e6;
+
+  return balances;
+}
+
+function copyAddress(address) {
+  navigator.clipboard.writeText(address);
+}
+
+async function update() {
+
+  const prices = await fetchPrices();
+  const balances = await fetchBalances();
+
+  const container = document.getElementById("cryptoContainer");
+  container.innerHTML = "";
+
+  prices.forEach(coin => {
+
+    const bal = balances[coin.id] || 0;
+    const usdValue = bal * coin.current_price;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <div class="left">
+        <img class="logo" src="${coin.image}">
+        <div class="info">
+          <div class="symbol">${SYMBOLS[coin.id]}</div>
+          <div class="price">Price: $${coin.current_price.toLocaleString()}</div>
+          <div class="balance">${bal.toFixed(6)} ${SYMBOLS[coin.id]}</div>
+          <div class="value">$${usdValue.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+        </div>
+      </div>
+      <button onclick="copyAddress('${ADDRESSES[coin.id]}')">Copy</button>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+update();
+setInterval(update, 30000);
+
+</script>
+
+</body>
+</html>
