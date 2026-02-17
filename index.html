@@ -84,11 +84,21 @@ button {
 button:hover {
   background: #2563eb;
 }
+
+/* Footer copyright */
+.footer {
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
+  font-size: 12px;
+  opacity: 0.6;
+}
 </style>
 </head>
 <body>
 
 <div class="container" id="cryptoContainer"></div>
+<div class="footer">©️SkeletalPanda</div>
 
 <script>
 // Placeholder wallet addresses (replace later)
@@ -99,7 +109,8 @@ const ADDRESSES = {
   binancecoin: "",
   dogecoin: "",
   litecoin: "",
-  tron: ""
+  tron: "",
+  usdt_bep20: "" // Add your BEP20 USDT address here
 };
 
 const SYMBOLS = {
@@ -109,16 +120,22 @@ const SYMBOLS = {
   binancecoin: "BNB",
   dogecoin: "DOGE",
   litecoin: "LTC",
-  tron: "TRX"
+  tron: "TRX",
+  usdt_bep20: "USDT(BEP20)"
 };
 
 // Fetch live prices from CoinGecko
 async function fetchPrices() {
-  const ids = Object.keys(ADDRESSES).join(",");
   const res = await fetch(
-    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}`
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=solana,ethereum,bitcoin,binancecoin,dogecoin,litecoin,tron,tether`
   );
-  return await res.json();
+  const data = await res.json();
+
+  // Map Tether to usdt_bep20 key
+  return data.map(coin => {
+    if (coin.id === "tether") coin.id = "usdt_bep20";
+    return coin;
+  });
 }
 
 // Fake balances for placeholder mode (all 0)
