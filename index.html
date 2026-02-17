@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Crypto Dashboard</title>
+<title>Crypto Widget</title>
 <style>
 body {
   margin: 0;
@@ -91,15 +91,15 @@ button:hover {
 <div class="container" id="cryptoContainer"></div>
 
 <script>
-
+// Placeholder wallet addresses (replace later)
 const ADDRESSES = {
-  solana: "YOUR_SOL_ADDRESS",
-  ethereum: "YOUR_ETH_ADDRESS",
-  bitcoin: "YOUR_BTC_ADDRESS",
-  binancecoin: "YOUR_BNB_ADDRESS",
-  dogecoin: "YOUR_DOGE_ADDRESS",
-  litecoin: "YOUR_LTC_ADDRESS",
-  tron: "YOUR_TRX_ADDRESS"
+  solana: "",
+  ethereum: "",
+  bitcoin: "",
+  binancecoin: "",
+  dogecoin: "",
+  litecoin: "",
+  tron: ""
 };
 
 const SYMBOLS = {
@@ -112,6 +112,7 @@ const SYMBOLS = {
   tron: "TRX"
 };
 
+// Fetch live prices from CoinGecko
 async function fetchPrices() {
   const ids = Object.keys(ADDRESSES).join(",");
   const res = await fetch(
@@ -120,69 +121,27 @@ async function fetchPrices() {
   return await res.json();
 }
 
+// Fake balances for placeholder mode (all 0)
 async function fetchBalances() {
-
   const balances = {};
-
-  // SOL
-  const solRes = await fetch("https://api.mainnet-beta.solana.com", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "getBalance",
-      params: [ADDRESSES.solana]
-    })
-  });
-  const solData = await solRes.json();
-  balances.solana = solData.result.value / 1e9;
-
-  // ETH
-  const ethData = await fetch(
-    `https://api.blockchair.com/ethereum/dashboards/address/${ADDRESSES.ethereum}`
-  ).then(r=>r.json());
-  balances.ethereum = ethData.data[ADDRESSES.ethereum].address.balance / 1e18;
-
-  // BNB
-  const bnbData = await fetch(
-    `https://api.blockchair.com/binance-smart-chain/dashboards/address/${ADDRESSES.binancecoin}`
-  ).then(r=>r.json());
-  balances.binancecoin = bnbData.data[ADDRESSES.binancecoin].address.balance / 1e18;
-
-  // BTC
-  const btcData = await fetch(
-    `https://api.blockchair.com/bitcoin/dashboards/address/${ADDRESSES.bitcoin}`
-  ).then(r=>r.json());
-  balances.bitcoin = btcData.data[ADDRESSES.bitcoin].address.balance / 1e8;
-
-  // LTC
-  const ltcData = await fetch(
-    `https://api.blockchair.com/litecoin/dashboards/address/${ADDRESSES.litecoin}`
-  ).then(r=>r.json());
-  balances.litecoin = ltcData.data[ADDRESSES.litecoin].address.balance / 1e8;
-
-  // DOGE
-  const dogeData = await fetch(
-    `https://api.blockchair.com/dogecoin/dashboards/address/${ADDRESSES.dogecoin}`
-  ).then(r=>r.json());
-  balances.dogecoin = dogeData.data[ADDRESSES.dogecoin].address.balance / 1e8;
-
-  // TRX
-  const trxData = await fetch(
-    `https://apilist.tronscan.org/api/account?address=${ADDRESSES.tron}`
-  ).then(r=>r.json());
-  balances.tron = trxData.balance / 1e6;
-
+  for (const key of Object.keys(ADDRESSES)) {
+    balances[key] = 0;
+  }
   return balances;
 }
 
+// Copy wallet address to clipboard
 function copyAddress(address) {
+  if (!address) {
+    alert("No wallet address set yet!");
+    return;
+  }
   navigator.clipboard.writeText(address);
+  alert("Address copied!");
 }
 
+// Update the widget
 async function update() {
-
   const prices = await fetchPrices();
   const balances = await fetchBalances();
 
@@ -190,7 +149,6 @@ async function update() {
   container.innerHTML = "";
 
   prices.forEach(coin => {
-
     const bal = balances[coin.id] || 0;
     const usdValue = bal * coin.current_price;
 
@@ -199,7 +157,7 @@ async function update() {
 
     card.innerHTML = `
       <div class="left">
-        <img class="logo" src="${coin.image}">
+        <img class="logo" src="${coin.image}" alt="${SYMBOLS[coin.id]} logo">
         <div class="info">
           <div class="symbol">${SYMBOLS[coin.id]}</div>
           <div class="price">Price: $${coin.current_price.toLocaleString()}</div>
@@ -214,9 +172,9 @@ async function update() {
   });
 }
 
+// Initial load + auto-update every 30 seconds
 update();
 setInterval(update, 30000);
-
 </script>
 
 </body>
